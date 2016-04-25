@@ -1,0 +1,115 @@
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'java'
+
+// This is the name of the Project (I know that this is the name of the Jar)
+archivesBaseName = 'Template'
+group = 'adx.audioxd.ceapi.template'
+version = '1.0-BETA'
+def MainClass = group + '.' + archivesBaseName
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
+    }
+}
+
+dependencies {
+    compile(group: 'org.spigotmc', name: 'spigot-api', version: '1.8-R0.1-SNAPSHOT') {
+        // Because the bungeecord-chat.jar isn't being found
+        transitive = false
+    }
+    compile group: 'org.bukkit', name: 'bukkit', version: '1.8-R0.1-SNAPSHOT'
+
+    // To the folder where the CustomEnchantmentAPI.jar is
+    compile fileTree(dir: '../CustomEnchantmentAPI/output/latest', include: '*.jar')
+
+    testCompile 'junit:junit:4.12'
+}
+
+// To process the plugin.yml file for ease of access
+processResources {
+    from(sourceSets.main.resources.srcDirs) {
+        include 'plugin.yml'
+
+        expand 'plugin_name': archivesBaseName,
+                'plugin_version': version,
+                'plugin_main': MainClass
+    }
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'plugin.yml'
+        exclude '**/*.dev'
+    }
+}
+
+// Where to upload the output Files
+uploadArchives {
+    repositories {
+        flatDir {
+            dirs '/output/' + version
+        }
+    }
+    repositories {
+        flatDir {
+            dirs '/output/latest'
+        }
+    }
+}
+
+/* ********************************************************************************* */
+/*                          [For my personal use]                                    */
+/* ********************************************************************************* */
+
+// This method is for me to make it Easy to create a JavaDoc(.zip)
+task docs(type: Javadoc) {
+    source sourceSets.main.allJava
+
+    classpath = files(sourceSets.main.compileClasspath)
+    destinationDir = new File(projectDir, 'build/docs')
+}
+task javadocZip(type: Zip, dependsOn: docs) {
+    from "build/docs"
+    baseName = "CEAPI-javadoc"
+    into('/')
+}
+
+// Added the JavaDoc as a artifact
+artifacts {
+    archives(file(javadocZip.archivePath)) {
+        name javadocZip.baseName
+        type 'zip'
+        builtBy javadocZip
+    }
+}
+
+
+tasks.uploadArchives.dependsOn(clean)
+// Deletes every file except .gitignore
+clean.doFirst {
+    if (file("/output/latest").exists()) {
+        new File(rootDir, "/output/latest").eachFile() { file ->
+            if (!file.getName().equalsIgnoreCase(".gitignore")) {
+                delete file.getPath()
+            }
+        }
+    }
+}
+uploadArchives {
+    repositories {
+        flatDir {
+            dirs '../_extra/CE' // the custom output location 1
+        }
+        flatDir {
+            dirs '../_extra/run/plugins' // the custom output location 2
+        }
+    }
+}
+
+// This for generating the gradle wrapper
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.12'
+}

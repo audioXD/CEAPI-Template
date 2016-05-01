@@ -104,7 +104,7 @@ clean.doFirst {
 uploadArchives {
     repositories {
         flatDir {
-            dirs '../_extra/CE' // the custom output location 1
+            ddirs '../_extra/output/' + archivesBaseName // the custom output location 1
         }
         flatDir {
             dirs '../_extra/run/plugins' // the custom output location 2
